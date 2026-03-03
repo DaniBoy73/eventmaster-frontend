@@ -27,3 +27,6 @@ Content-Type: application/json
   "password": "12345678",
   "password_confirmation": "12345678"
 }
+### Rota pra recuperar os eventos
+GET {{baseUrl}}/events
+Authorization: {{authToken}}
