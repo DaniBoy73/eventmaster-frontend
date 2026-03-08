@@ -149,7 +149,15 @@ export function Header() {
                             )}
 
                             {isAdmin && (
-                                <button className={`${styles.itemNavbar}`}>
+                                <button
+                                    className={`${styles.itemNavbar}`}
+                                    onClick={() => {
+                                        navigate(
+                                            PageRoutesName.administrador
+                                                .adminPage
+                                        );
+                                    }}
+                                >
                                     <LayoutDashboardIcon
                                         width={24}
                                         height={24}
