@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import styles from './style.module.css';
-import { DefaultLayout } from '../../layouts/DefaultLayout';
 import { useNavigate } from 'react-router';
 import PageRoutesName from '../../constants/PageRoutesName';
 
@@ -21,8 +20,7 @@ export function AdminPanelPage() {
     >('visaoGeral');
     const navigate = useNavigate();
     return (
-        <DefaultLayout>
-            <div className={styles.container}>
+        <div className={styles.container}>
                 {/* Título */}
                 <h1 className={styles.pageTitle}>
                     Painel Administrativo Global - EventMaster
@@ -348,6 +346,5 @@ export function AdminPanelPage() {
                     </div>
                 )}
             </div>
-        </DefaultLayout>
     );
 }

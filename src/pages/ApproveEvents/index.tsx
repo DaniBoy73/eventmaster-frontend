@@ -11,7 +11,6 @@ import {
     DollarSign,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
-import { DefaultLayout } from '../../layouts/DefaultLayout';
 import { notify } from '../../adapters/toastHotAdapter';
 import PageRoutesName from '../../constants/PageRoutesName';
 import styles from './style.module.css';
@@ -98,8 +97,7 @@ export function ApproveEventsPage() {
         (ingressos * preco).toLocaleString('pt-BR');
 
     return (
-        <DefaultLayout>
-            <div className={styles.container}>
+        <div className={styles.container}>
                 {/* Voltar */}
                 <button
                     className={styles.backButton}
@@ -222,6 +220,5 @@ export function ApproveEventsPage() {
                     </div>
                 </div>
             </div>
-        </DefaultLayout>
     );
 }
