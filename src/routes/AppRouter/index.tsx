@@ -15,28 +15,19 @@ export function AppRouter() {
     return (
         <BrowserRouter>
             <Routes>
-                {/* Todas as rotas com DefaultLayout */}
-                <Route element={<DefaultLayout />}>
-                    <Route path={PageRoutesName.home} element={<HomePage />} />
-                    <Route path="/auth/*" element={<AuthRouter />} />
-                    <Route path="/organizer/*" element={<OrganizerRouter />} />
-                    <Route path="/admin/*" element={<AdminRouter />} />
-                    <Route path="/client/*" element={<ClientRouter />} />
-                    <Route
-                        path="/gerOrganizadores"
-                        element={
-                            <ManageOrganizersPage
-                                onBack={() => window.history.back()}
-                            />
-                        }
-                    />
-                    <Route
-                        path="/event-details"
-                        element={<EventDetailsPage />}
-                    />
-                    <Route path="/checkout" element={<CheckoutPage />} />
-                    <Route path="*" element={<NotFoundPage />} />
-                </Route>
+                <Route path={PageRoutesName.home} element={<HomePage />}></Route>
+                <Route path="/auth/*" element={<AuthRouter />}></Route>
+                <Route path="/organizer/*" element={<OrganizerRouter />} />
+                <Route path="/admin/*" element={<AdminRouter />} />
+                <Route path="/client/*" element={<ClientRouter />} />
+
+                <Route path="*" element={<NotFoundPage />}></Route>
+                
+                <Route path="/getOrganizers" element={<ManageOrganizers onBack={() => window.history.back()} />}></Route>
+
+                <Route path="/event-details" element={<EventDetailsPage />}></Route>
+
+                <Route path="/checkout" element={<Checkout />}></Route>
             </Routes>
         </BrowserRouter>
     );
