@@ -90,7 +90,7 @@ PATCH {{baseUrl}}/admins/5
 Authorization: Bearer {{adminUser.response.body.token}}
 
 ### Promover um determinado usuario (1 - Teste) para organizador
-PATCH {{baseUrl}}/users/1/role
+PATCH {{baseUrl}}/users/2/role
 Content-Type: application/json
 Authorization: Bearer {{adminUser.response.body.token}}
 
@@ -99,12 +99,12 @@ Authorization: Bearer {{adminUser.response.body.token}}
 }
 
 ### Promover um determinado usuario (1 - Teste) para 'usuario'
-PATCH {{baseUrl}}/users/1/role
+PATCH {{baseUrl}}/users/2/role
 Content-Type: application/json
 Authorization: Bearer {{adminUser.response.body.token}}
 
 {
-  "role": "user"
+  "role": "admin"
 }
 
 
