@@ -71,7 +71,7 @@ Content-Type: application/json
     "password":"password"
 }
 
-### LOGIN adminUser
+### GET adminUser
 GET {{baseUrl}}/user
 Authorization: Bearer {{adminUser.response.body.token}}
 

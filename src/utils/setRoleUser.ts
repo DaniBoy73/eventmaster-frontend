@@ -11,10 +11,8 @@ const roleById: Record<number, RoleTypes> = {
 
 const roleByName: Record<string, RoleTypes> = {
     user: 'USUARIO',
-    usuario: 'USUARIO',
     admin: 'ADMIN',
     organizer: 'ORGANIZADOR',
-    organizador: 'ORGANIZADOR',
     staff: 'STAFF',
 };
 
@@ -26,7 +24,7 @@ function normalizeRoleName(roleName?: string | null): RoleTypes | null {
 }
 
 export function setRoleUser(user: UserAPIInfo) {
-    const roleFromName = normalizeRoleName(user.role_name);
+    const roleFromName = normalizeRoleName(user.role);
     const roleFromId =
         typeof user.id_role === 'number' ? roleById[user.id_role] : null;
 
