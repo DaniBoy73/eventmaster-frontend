@@ -1,4 +1,4 @@
-import { Outlet, Route, Routes } from 'react-router';
+import { Route, Routes } from 'react-router';
 import { AdminDashboardPage } from '../../pages/AdminDashboard';
 import { ApproveEventsPage } from '../../pages/ApproveEvents';
 import { AdminRelatorioPage } from '../../pages/AdminRelatorio';

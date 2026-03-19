@@ -444,3 +444,385 @@
     color: #10b981;
     margin: 0;
 }
+
+/* Receita Tab Specific */
+.receitaTabContent {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5em;
+}
+
+/* Double Bars Chart */
+.barChartAreaWrapper {
+    position: relative;
+    padding-left: 60px;
+}
+
+.barChartAreaDouble {
+    position: relative;
+    height: 350px;
+    display: flex;
+}
+
+.yAxisLabelsDouble {
+    position: absolute;
+    left: -60px;
+    top: -10px;
+    bottom: 0px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 1em;
+    color: #6b7280;
+}
+
+.barsWrapperDouble {
+    position: relative;
+    flex-grow: 1;
+    margin-bottom: 30px;
+    margin-top: 5px;
+}
+
+.barsContainerDouble {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 40px;
+}
+
+.barColDouble {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 100%;
+    align-items: center;
+}
+
+.barPair {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 100%;
+}
+
+.barFillBlue {
+    width: 25px;
+    background: #3b82f6;
+    border-radius: 2px 2px 0 0;
+}
+
+.barFillGreen {
+    width: 25px;
+    background: #10b981;
+    border-radius: 2px 2px 0 0;
+}
+
+.barMonthDouble {
+    position: absolute;
+    bottom: -30px;
+    font-size: 1em;
+    color: #6b7280;
+}
+
+.chartLegendDouble {
+    display: flex;
+    justify-content: center;
+    gap: 1.5em;
+    margin-top: 2.5em;
+}
+
+/* Metric Rows Box */
+.metricRowBlock {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.25em;
+}
+
+.metricMinLabel {
+    font-size: 1.05em;
+    color: #6b7280;
+    margin: 0 0 0.5em;
+}
+
+.metricBigValue {
+    font-size: 2em;
+    color: #111827;
+    margin: 0;
+}
+
+.metricMedValue {
+    font-size: 1.4em;
+    color: #111827;
+    margin: 0;
+}
+
+.greenText {
+    color: #10b981;
+}
+
+.metricDivider {
+    height: 1px;
+    background: #e5e7eb;
+    margin: 2em 0;
+}
+
+.exportFullBtn {
+    width: 100%;
+    background: #0f172a;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5em;
+    padding: 1.2em;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.05em;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 2.5em;
+    transition: background 0.2s;
+}
+
+.exportFullBtn:hover {
+    background: #1e293b;
+}
+
+/* Categorias Bars */
+.catBarsList {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5em;
+}
+
+.catBarItem {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75em;
+}
+
+.catBarHeader {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.05em;
+    color: #374151;
+}
+
+.catBarBg {
+    width: 100%;
+    height: 14px;
+    background: #e5e7eb;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.catBarFill {
+    height: 100%;
+    border-radius: 9999px;
+}
+
+/* Organizadores Tab */
+.orgTabContent {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5em;
+}
+
+.chartCardHeaderOrg {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2em;
+}
+
+.tableWrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.orgTable {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.orgTable th {
+    color: #6b7280;
+    font-size: 0.85em;
+    font-weight: 600;
+    padding-bottom: 1em;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.orgTable td {
+    padding: 1.25em 0;
+    border-bottom: 1px solid #f3f4f6;
+    color: #374151;
+    font-weight: 500;
+}
+
+.orgTable tr:last-child td {
+    border-bottom: none;
+}
+
+.orgNameCol {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+}
+
+.orgRank {
+    width: 32px;
+    height: 32px;
+    background: #dbeafe;
+    color: #2563eb;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+/* Organizadores Bar Chart */
+.orgChartArea {
+    position: relative;
+    padding-left: 60px;
+    height: 350px;
+}
+
+.yAxisLabelsOrg {
+    position: absolute;
+    left: 0px;
+    top: -10px;
+    height: calc(100% - 60px);
+    width: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    font-size: 1em;
+    color: #6b7280;
+}
+
+.barsWrapperOrg {
+    position: relative;
+    height: calc(100% - 60px);
+    margin-left: 10px;
+}
+
+.barsContainerOrg {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+}
+
+.barColOrg {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 100%;
+    align-items: center;
+}
+
+.barPairOrg {
+    display: flex;
+    align-items: flex-end;
+    gap: 0px;
+    height: 100%;
+    width: 60px;
+    justify-content: center;
+}
+
+.barFillGreenOrg {
+    width: 48px;
+    background: #10b981;
+    border-radius: 2px 2px 0 0;
+}
+
+.barLabelOrg {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-45deg);
+    transform-origin: top left;
+    white-space: nowrap;
+    font-size: 1em;
+    color: #6b7280;
+}
+
+/* Eventos Tab */
+.evtTabContent {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5em;
+}
+
+.evtRank {
+    width: 32px;
+    height: 32px;
+    background: #fef08a;
+    color: #ca8a04;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.evtCatList {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+}
+
+.evtCatItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25em;
+    border-radius: 8px;
+    background: #f9fafb;
+    font-size: 1.05em;
+    font-weight: 500;
+}
+
+.evtCatLeft {
+    display: flex;
+    align-items: center;
+    gap: 0.75em;
+}
+
+.evtCatCount {
+    color: #4b5563;
+}
+
+/* Color Themes for Eventos por Categoria */
+.blueTheme {
+    background: #eff6ff;
+    color: #1e40af;
+}
+
+.purpleTheme {
+    background: #f5f3ff;
+    color: #6b21a8;
+}
+
+.greenTheme {
+    background: #ecfdf5;
+    color: #065f46;
+}
+
+.orangeTheme {
+    background: #fffbeb;
+    color: #92400e;
+}
