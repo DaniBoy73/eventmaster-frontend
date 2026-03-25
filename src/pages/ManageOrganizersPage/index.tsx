@@ -31,7 +31,6 @@ import {
     DialogTitle,
     DialogDescription,
 } from '../../components/ui/dialog';
-import { toast } from 'sonner';
 import styles from './styles.module.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAllOrganizersRequest } from '../../services/admin/getAllOrganizersRequest';
@@ -45,6 +44,7 @@ import { notify } from '../../adapters/toastHotAdapter';
 import type { AxiosError } from 'axios';
 import type { OrganizerData } from '../../types/OrganizerData';
 import { filterOrganizersByStatus } from '../../utils/filterOrganizerByStatus';
+import { suspendOrganizerAccount } from '../../services/admin/suspendOrganizerAccount';
 
 const Detail = ({
     label,
@@ -90,11 +90,12 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
         },
     });
 
-    const [solicitacaoSelecionada, setSolicitacaoSelecionada] = useState<OrganizerData | null>(null);
+    const [solicitacaoSelecionada, setSolicitacaoSelecionada] =
+        useState<OrganizerData | null>(null);
     const [abaAtual, setAbaAtual] = useState('pendentes');
 
     const organizersList = allOrganizers?.data || [];
-    
+
     const pendentes = filterOrganizersByStatus(organizersList, 'pending');
     const ativos = filterOrganizersByStatus(organizersList, 'approved');
     const historico = organizersList.filter(
@@ -104,25 +105,29 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
     const approveMutation = useMutation({
         mutationFn: (id: number) => approveRequestForOrganizer(id),
         onSuccess: (data) => {
-            toast.success(data?.message || 'Organizador aprovado com sucesso!');
+            notify.success(
+                data?.message || 'Organizador aprovado com sucesso!'
+            );
             queryClient.invalidateQueries({ queryKey: ['organizersRequest'] });
             setSolicitacaoSelecionada(null);
         },
         onError: () => {
-            toast.error('Erro ao aprovar organizador.');
-        }
+            notify.error('Erro ao aprovar organizador.');
+        },
     });
 
     const rejectMutation = useMutation({
         mutationFn: (id: number) => rejectRequestForOrganizer(id),
         onSuccess: (message) => {
-            toast.info(typeof message === 'string' ? message : 'Solicitação rejeitada.');
+            notify.info(
+                typeof message === 'string' ? message : 'Solicitação rejeitada.'
+            );
             queryClient.invalidateQueries({ queryKey: ['organizersRequest'] });
             setSolicitacaoSelecionada(null);
         },
         onError: () => {
-            toast.error('Erro ao rejeitar organizador.');
-        }
+            notify.error('Erro ao rejeitar organizador.');
+        },
     });
 
     const aoAprovar = (id: number) => {
@@ -133,9 +138,14 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
         rejectMutation.mutate(id);
     };
 
-    const toggleStatus = (id: number, isAtivo: boolean) => {
-        if (isAtivo && !confirm('Deseja suspender este organizador?')) return;
-        toast.error('Funcionalidade de suspender ainda não integrada com a API.');
+    const toggleStatus = (id: number, organizer: OrganizerData) => {
+        try {
+            suspendOrganizerAccount(id, organizer);
+        } catch (err) {
+            notify.error(
+                'Funcionalidade de suspender ainda não integrada com a API.'
+            );
+        }
     };
 
     return (
@@ -191,7 +201,9 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
                                                     className={styles.cardTitle}
                                                 >
                                                     <Building2
-                                                        className={styles.iconSize5}
+                                                        className={
+                                                            styles.iconSize5
+                                                        }
                                                     />{' '}
                                                     {s.name}
                                                 </CardTitle>
@@ -249,7 +261,9 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
                                             </Button>
                                             <Button
                                                 variant="default"
-                                                disabled={approveMutation.isPending}
+                                                disabled={
+                                                    approveMutation.isPending
+                                                }
                                                 className={`${styles.flex1} ${styles.btnApprove}`}
                                                 onClick={() => aoAprovar(s.id)}
                                             >
@@ -260,7 +274,9 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
                                             </Button>
                                             <Button
                                                 variant="destructive"
-                                                disabled={rejectMutation.isPending}
+                                                disabled={
+                                                    rejectMutation.isPending
+                                                }
                                                 className={styles.flex1}
                                                 style={{
                                                     flex: '0.2',
@@ -319,52 +335,150 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
                                                         key={org.id}
                                                         className={`${styles.trBase} ${isAtivo ? styles.trAtivo : styles.trSuspenso}`}
                                                     >
-                                                        <td className={styles.tdStyle}>
-                                                            <div className={styles.flexColGap1}>
-                                                                <span className={styles.orgName}>
+                                                        <td
+                                                            className={
+                                                                styles.tdStyle
+                                                            }
+                                                        >
+                                                            <div
+                                                                className={
+                                                                    styles.flexColGap1
+                                                                }
+                                                            >
+                                                                <span
+                                                                    className={
+                                                                        styles.orgName
+                                                                    }
+                                                                >
                                                                     {org.name}
                                                                 </span>
-                                                                <span className={styles.cnpjBadge}>
-                                                                    <FileText className={styles.iconTiny} /> Não informado
+                                                                <span
+                                                                    className={
+                                                                        styles.cnpjBadge
+                                                                    }
+                                                                >
+                                                                    <FileText
+                                                                        className={
+                                                                            styles.iconTiny
+                                                                        }
+                                                                    />{' '}
+                                                                    Não
+                                                                    informado
                                                                 </span>
                                                             </div>
                                                         </td>
-                                                        <td className={`${styles.tdStyle} ${styles.contactCell}`}>
-                                                            <div className={styles.flexColGap1}>
-                                                                <div className={styles.infoItem}>
-                                                                    <Mail className={styles.iconGray} /> <span>{org.email}</span>
+                                                        <td
+                                                            className={`${styles.tdStyle} ${styles.contactCell}`}
+                                                        >
+                                                            <div
+                                                                className={
+                                                                    styles.flexColGap1
+                                                                }
+                                                            >
+                                                                <div
+                                                                    className={
+                                                                        styles.infoItem
+                                                                    }
+                                                                >
+                                                                    <Mail
+                                                                        className={
+                                                                            styles.iconGray
+                                                                        }
+                                                                    />{' '}
+                                                                    <span>
+                                                                        {
+                                                                            org.email
+                                                                        }
+                                                                    </span>
                                                                 </div>
-                                                                <div className={styles.infoItem}>
-                                                                    <Phone className={styles.iconGray} /> <span className={styles.textSmGray}>{org.phone_number}</span>
+                                                                <div
+                                                                    className={
+                                                                        styles.infoItem
+                                                                    }
+                                                                >
+                                                                    <Phone
+                                                                        className={
+                                                                            styles.iconGray
+                                                                        }
+                                                                    />{' '}
+                                                                    <span
+                                                                        className={
+                                                                            styles.textSmGray
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            org.phone_number
+                                                                        }
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                        <td className={styles.tdStyle}>
-                                                            <div className={styles.flexColGap1}>
-                                                                <div className={styles.dateText}>
-                                                                    {new Date(org.updated_at).toLocaleDateString('pt-BR')}
+                                                        <td
+                                                            className={
+                                                                styles.tdStyle
+                                                            }
+                                                        >
+                                                            <div
+                                                                className={
+                                                                    styles.flexColGap1
+                                                                }
+                                                            >
+                                                                <div
+                                                                    className={
+                                                                        styles.dateText
+                                                                    }
+                                                                >
+                                                                    {new Date(
+                                                                        org.updated_at
+                                                                    ).toLocaleDateString(
+                                                                        'pt-BR'
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                        <td className={styles.tdStyle}>
+                                                        <td
+                                                            className={
+                                                                styles.tdStyle
+                                                            }
+                                                        >
                                                             0
                                                         </td>
-                                                        <td className={styles.tdStyle}>
+                                                        <td
+                                                            className={
+                                                                styles.tdStyle
+                                                            }
+                                                        >
                                                             R$ 0
                                                         </td>
-                                                        <td className={styles.tdStyle}>
+                                                        <td
+                                                            className={
+                                                                styles.tdStyle
+                                                            }
+                                                        >
                                                             <Badge
                                                                 className={`${styles.statusBadge} ${isAtivo ? styles.badgeAtivo : styles.badgeSuspenso}`}
                                                             >
                                                                 Ativo
                                                             </Badge>
                                                         </td>
-                                                        <td className={`${styles.tdStyle} ${styles.tdRight}`}>
+                                                        <td
+                                                            className={`${styles.tdStyle} ${styles.tdRight}`}
+                                                        >
                                                             <Button
                                                                 variant="outline"
-                                                                onClick={() => toggleStatus(org.id, isAtivo)}
+                                                                onClick={() =>
+                                                                    toggleStatus(
+                                                                        org.id,
+                                                                        org
+                                                                    )
+                                                                }
                                                                 className={`${styles.btnAction} ${isAtivo ? styles.btnSuspend : styles.btnReactivate}`}
-                                                                style={{ padding: '0.75rem 1.5rem', fontSize: '1.125rem' }}
+                                                                style={{
+                                                                    padding:
+                                                                        '0.75rem 1.5rem',
+                                                                    fontSize:
+                                                                        '1.125rem',
+                                                                }}
                                                             >
                                                                 Suspender
                                                             </Button>
@@ -383,27 +497,62 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
                         <div className={styles.gridContainer}>
                             {historico.map((s) => (
                                 <Card key={s.id}>
-                                    <CardHeader className={styles.historicoHeader}>
+                                    <CardHeader
+                                        className={styles.historicoHeader}
+                                    >
                                         <div className={styles.cardHeaderFlex}>
-                                            <CardTitle className={styles.historicoTitle}>
+                                            <CardTitle
+                                                className={
+                                                    styles.historicoTitle
+                                                }
+                                            >
                                                 {s.name}
                                             </CardTitle>
                                             <Badge
-                                                variant={s.status === 'approved' ? 'default' : 'destructive'}
+                                                variant={
+                                                    s.status === 'approved'
+                                                        ? 'default'
+                                                        : 'destructive'
+                                                }
                                             >
-                                                {s.status === 'approved' ? 'Aprovado' : 'Rejeitado'}
+                                                {s.status === 'approved'
+                                                    ? 'Aprovado'
+                                                    : 'Rejeitado'}
                                             </Badge>
                                         </div>
                                     </CardHeader>
-                                    <CardContent className={styles.historicoGrid}>
+                                    <CardContent
+                                        className={styles.historicoGrid}
+                                    >
                                         <div>
-                                            <span className={styles.historicoLabel}>Email:</span> {s.email}
+                                            <span
+                                                className={
+                                                    styles.historicoLabel
+                                                }
+                                            >
+                                                Email:
+                                            </span>{' '}
+                                            {s.email}
                                         </div>
                                         <div>
-                                            <span className={styles.historicoLabel}>Telefone:</span> {s.phone_number}
+                                            <span
+                                                className={
+                                                    styles.historicoLabel
+                                                }
+                                            >
+                                                Telefone:
+                                            </span>{' '}
+                                            {s.phone_number}
                                         </div>
                                         <div>
-                                            <span className={styles.historicoLabel}>CNPJ:</span> Não informado
+                                            <span
+                                                className={
+                                                    styles.historicoLabel
+                                                }
+                                            >
+                                                CNPJ:
+                                            </span>{' '}
+                                            Não informado
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -443,7 +592,9 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
                                     />
                                     <Detail
                                         label="Telefone"
-                                        value={solicitacaoSelecionada.phone_number}
+                                        value={
+                                            solicitacaoSelecionada.phone_number
+                                        }
                                     />
                                     <Detail
                                         label="Data do Pedido"
@@ -460,9 +611,7 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
                                         </label>
                                         <div className={styles.descBox}>
                                             <p className={styles.descText}>
-                                                {
-                                                    solicitacaoSelecionada.reason
-                                                }
+                                                {solicitacaoSelecionada.reason}
                                             </p>
                                         </div>
                                     </div>
