@@ -1,24 +1,40 @@
+import { useState, useEffect } from 'react';
+import { getLocalStorageRole } from '../../utils/localStorageRole';
 import {
     Calendar,
     MapPin,
     Users,
     Search,
-    Filter,
-    ChevronDown,
     LayoutGrid,
     Ticket,
     DollarSign,
     TrendingUp,
+    Zap,
+    Check,
+    Filter,
+    ChevronDown,
+    Music,
+    Palette,
+    Mic2,
+    Trophy,
+    Utensils
 } from 'lucide-react';
 import styles from './styles.module.css';
-import { getLocalStorageRole } from '../../utils/localStorageRole';
 import { useNavigate } from 'react-router';
 import PageRoutesName from '../../constants/PageRoutesName';
-import { useEffect } from 'react';
 import { useGetMe } from '../../hooks/useGetMe';
 
 // Importação do MOCK_EVENTS vindo do caminho solicitado
 import { MOCK_EVENTS } from '../../mocks/events';
+
+const CATEGORIES = [
+    { id: 'musica', label: 'Música', icon: Music },
+    { id: 'teatro', label: 'Teatro', icon: Palette },
+    { id: 'comedia', label: 'Comédia', icon: Mic2 },
+    { id: 'tecnologia', label: 'Tecnologia', icon: Zap },
+    { id: 'esportes', label: 'Esportes', icon: Trophy },
+    { id: 'gastronomia', label: 'Gastronomia', icon: Utensils },
+];
 
 export function HomePage() {
     const userRole = getLocalStorageRole();
@@ -26,9 +42,24 @@ export function HomePage() {
 
     const { data: userData } = useGetMe();
 
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    const [showCategories, setShowCategories] = useState(false);
+
+    const toggleCategory = (id: string) => {
+        setSelectedCategories((prev: string[]) => 
+            prev.includes(id) ? prev.filter((c: string) => c !== id) : [...prev, id]
+        );
+    };
+
     useEffect(() => {
         console.log(userData);
     }, [userData]);
+
+    const filteredEvents = selectedCategories.length === 0
+        ? MOCK_EVENTS
+        : MOCK_EVENTS.filter(event => 
+            selectedCategories.includes(event.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""))
+        );
 
     return (
         <div className={styles.containerMain}>
@@ -47,19 +78,50 @@ export function HomePage() {
                 </div>
 
                 <div className={styles.filterSection}>
-                    <div className={styles.searchWrapper}>
-                        <Search className={styles.searchIcon} size={20} />
-                        <input
-                            type="text"
-                            placeholder="Buscar eventos..."
-                            className={styles.searchInput}
-                        />
+                    <div className={styles.filterTop}>
+                        <div className={styles.searchWrapper}>
+                            <Search className={styles.searchIcon} size={20} />
+                            <input
+                                type="text"
+                                placeholder="Buscar eventos..."
+                                className={styles.searchInput}
+                            />
+                        </div>
+                        <div 
+                            className={`${styles.categoryFilter} ${showCategories ? styles.activeFilter : ''}`}
+                            onClick={() => setShowCategories(!showCategories)}
+                        >
+                            <Filter className={styles.filterIcon} size={18} />
+                            <span>Categorias {selectedCategories.length > 0 && `(${selectedCategories.length})`}</span>
+                            <ChevronDown size={16} className={`${styles.chevron} ${showCategories ? styles.chevronUp : ''}`} />
+                        </div>
                     </div>
-                    <div className={styles.categoryFilter}>
-                        <Filter className={styles.filterIcon} size={18} />
-                        <span>Todas Categorias</span>
-                        <ChevronDown size={16} />
-                    </div>
+
+                    {showCategories && (
+                        <div className={styles.categoriesContainer}>
+                            <button 
+                                className={`${styles.categoryChip} ${selectedCategories.length === 0 ? styles.chipActive : ''}`}
+                                onClick={() => setSelectedCategories([])}
+                            >
+                                Todas
+                            </button>
+                            {CATEGORIES.map(cat => {
+                                const Icon = cat.icon;
+                                const isActive = selectedCategories.includes(cat.id);
+                                return (
+                                    <button 
+                                        key={cat.id}
+                                        className={`${styles.categoryChip} ${isActive ? styles.chipActive : ''}`}
+                                        onClick={() => toggleCategory(cat.id)}
+                                    >
+                                        <Icon size={16} />
+                                        {cat.label}
+                                        {isActive && <Check size={14} className={styles.checkIcon} />}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
 
                 {userRole === 'ADMIN' && (
@@ -118,7 +180,7 @@ export function HomePage() {
             </header>
 
             <div className={styles.eventsGrid}>
-                {MOCK_EVENTS.map((event) => (
+                {filteredEvents.map((event) => (
                     <div
                         className={styles.card}
                         key={event.id}
