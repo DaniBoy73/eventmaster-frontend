@@ -1,82 +1,139 @@
-import { useState } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, Eye, Mail, Phone, FileText, Building2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+    ArrowLeft,
+    CheckCircle,
+    XCircle,
+    Eye,
+    Mail,
+    Phone,
+    Building2,
+    IdCardIcon,
+} from 'lucide-react';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from "../../components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
-import { toast } from 'sonner';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from '../../components/ui/tabs';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from '../../components/ui/dialog';
 import styles from './styles.module.css';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getAllOrganizersRequest } from '../../services/admin/getAllOrganizersRequest';
+import { approveRequestForOrganizer } from '../../services/admin/approveRequestForOrganizer';
+import { rejectRequestForOrganizer } from '../../services/admin/rejectRequestForOrganizer';
+import { useGetMe } from '../../hooks/useGetMe';
+import { getLocalStorageRole } from '../../utils/localStorageRole';
+import { useNavigate } from 'react-router';
+import PageRoutesName from '../../constants/PageRoutesName';
+import { notify } from '../../adapters/toastHotAdapter';
+import type { AxiosError } from 'axios';
+import type { OrganizerData } from '../../types/OrganizerData';
+import { filterOrganizersByStatus } from '../../utils/filterOrganizerByStatus';
+import { promoteSomeoneToUser } from '../../services/admin/promoteSomeoneTo';
+import type { apiResponseError } from '../../server/apiResponse';
 
-interface SolicitacaoOrganizador { id: string; nomeOrganizacao: string; email: string; telefone: string; cnpj: string; descricao: string; site: string; endereco: string; dataSolicitacao: string; status: 'pendente' | 'aprovado' | 'rejeitado'; }
-interface Organizador { id: string; nomeOrganizacao: string; email: string; telefone: string; cnpj: string; dataAprovacao: string; totalEventos: number; receitaTotal: number; status: 'ativo' | 'suspenso'; }
-
-const SOLICITACOES_MOCK: SolicitacaoOrganizador[] = [
-  { id: '1', nomeOrganizacao: 'Produtora ABC Eventos', email: 'contato@abceventos.com.br', telefone: '(11) 98888-8888', cnpj: '12.345.678/0001-90', descricao: 'Produtora especializada em eventos corporativos e festivais de música eletrônica com mais de 10 anos de experiência no mercado.', site: 'https://www.abceventos.com.br', endereco: 'Av. Paulista, 1000 - São Paulo, SP', dataSolicitacao: '2025-11-20', status: 'pendente' },
-  { id: '2', nomeOrganizacao: 'Teatro Nacional', email: 'admin@teatronacional.com', telefone: '(21) 97777-7777', cnpj: '98.765.432/0001-10', descricao: 'Teatro com 50 anos de história, focado em espetáculos culturais e peças clássicas.', site: 'https://www.teatronacional.com', endereco: 'Centro - Rio de Janeiro, RJ', dataSolicitacao: '2025-11-18', status: 'pendente' }
-];
-
-const ORGANIZADORES_MOCK: Organizador[] = [
-  { id: '1', nomeOrganizacao: 'Live Nation Brasil', email: 'contato@livenation.com.br', telefone: '(11) 99999-9999', cnpj: '11.111.111/0001-11', dataAprovacao: '2025-01-15', totalEventos: 45, receitaTotal: 1250000, status: 'ativo' },
-  { id: '2', nomeOrganizacao: 'Rock World', email: 'info@rockworld.com.br', telefone: '(11) 98888-8888', cnpj: '22.222.222/0001-22', dataAprovacao: '2025-03-10', totalEventos: 28, receitaTotal: 850000, status: 'ativo' }
-];
-
-const Detail = ({ label, value, className = "" }: { label: string; value: string; className?: string }) => (
-  <div className={`${styles.detailWrapper} ${className}`}>
-    <label className={styles.detailLabel}>{label}</label>
-    <div className={styles.detailValue}>{value}</div>
-  </div>
-);
+const Detail = ({
+    label,
+    value,
+    className = '',
+}: {
+    label: string;
+    value: string | undefined | null;
+    className?: string;
+}) => {
+    if (!value) return null;
+    return (
+        <div className={`${styles.detailWrapper} ${className}`}>
+            <label className={styles.detailLabel}>{label}</label>
+            <div className={styles.detailValue}>{value}</div>
+        </div>
+    );
+};
 
 export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
-  const [solicitacoes, setSolicitacoes] = useState<SolicitacaoOrganizador[]>(SOLICITACOES_MOCK);
-  const [organizadores, setOrganizadores] = useState<Organizador[]>(ORGANIZADORES_MOCK);
-  const [solicitacaoSelecionada, setSolicitacaoSelecionada] = useState<SolicitacaoOrganizador | null>(null);
-  const [abaAtual, setAbaAtual] = useState('pendentes');
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
-  const pendentes = solicitacoes.filter(s => s.status === 'pendente');
-  const historico = solicitacoes.filter(s => s.status !== 'pendente');
+    useEffect(() => {
+        if (getLocalStorageRole() !== 'ADMIN') {
+            notify.error('Você não tem acesso a pagina de Administrador.');
+            navigate(PageRoutesName.home);
+        }
+    }, [navigate]);
 
-  const aoAprovar = (id: string) => {
-    const item = solicitacoes.find(s => s.id === id);
-    if (!item) return;
-    setSolicitacoes(p => p.map(s => s.id === id ? { ...s, status: 'aprovado' } : s));
-    setOrganizadores(p => [{ id: crypto.randomUUID(), nomeOrganizacao: item.nomeOrganizacao, email: item.email, telefone: item.telefone, cnpj: item.cnpj, dataAprovacao: new Date().toISOString().split('T')[0], totalEventos: 0, receitaTotal: 0, status: 'ativo' }, ...p]);
-    setSolicitacaoSelecionada(null);
-    toast.success(`${item.nomeOrganizacao} foi aprovado!`);
-  };
+    const { data: user } = useGetMe();
 
-  const aoRejeitar = (id: string) => {
-    const item = solicitacoes.find(s => s.id === id);
-    if (!item) return;
-    setSolicitacoes(p => p.map(s => s.id === id ? { ...s, status: 'rejeitado' } : s));
-    setSolicitacaoSelecionada(null);
-    toast.info(`Solicitação de ${item.nomeOrganizacao} rejeitada.`);
-  };
+    const { data: allOrganizers } = useQuery({
+        queryKey: ['organizersRequest'],
+        queryFn: getAllOrganizersRequest,
+        enabled: user?.role === 'admin',
+        retry: (failureCount, error) => {
+            const status = (error as AxiosError).response?.status;
+            if (status === 401 || status === 403) {
+                return false;
+            }
+            return failureCount < 2;
+        },
+    });
 
-  const toggleStatus = (id: string, isAtivo: boolean) => {
-    if (isAtivo && !confirm('Deseja suspender este organizador?')) return;
-    setOrganizadores(p => p.map(o => o.id === id ? { ...o, status: isAtivo ? 'suspenso' : 'ativo' } : o));
-    toast[isAtivo ? 'info' : 'success'](isAtivo ? 'Organizador suspenso.' : 'Organizador reativado.');
-  };
+    const [solicitacaoSelecionada, setSolicitacaoSelecionada] =
+        useState<OrganizerData | null>(null);
+    const [abaAtual, setAbaAtual] = useState('pendentes');
 
-  return (
-    <>
-      <div className={styles.container}>
-        <div className={styles.headerSection}>
-          <Button variant="ghost" onClick={onBack} className={styles.backButton}>
-            <ArrowLeft className={styles.backIcon} /> Voltar ao Dashboard
-          </Button>
-          <h1 className={styles.pageTitle}>Gerenciar Organizadores</h1>
-          <p className={styles.pageSubtitle}>Aprovar solicitações e gerenciar organizadores ativos</p>
-        </div>
+    const organizersList = allOrganizers?.data || [];
 
-        <Tabs value={abaAtual} onValueChange={setAbaAtual}>
-          <TabsList className={styles.tabsList}>
-            <TabsTrigger value="pendentes" className={styles.tabTriggerScaled}>Solicitações ({pendentes.length})</TabsTrigger>
-            <TabsTrigger value="ativos" className={styles.tabTriggerScaled}>Organizadores Ativos ({organizadores.filter(o => o.status === 'ativo').length})</TabsTrigger>
-            <TabsTrigger value="historico" className={styles.tabTriggerScaled}>Histórico</TabsTrigger>
-          </TabsList>
+    const pendentes = filterOrganizersByStatus(organizersList, 'pending');
+    const ativos = filterOrganizersByStatus(organizersList, 'approved');
+    const historyOrganizers = organizersList.filter(
+        (org) => org.status === 'approved' || org.status === 'rejected'
+    );
+
+    const approveMutation = useMutation({
+        mutationFn: (id: number) => approveRequestForOrganizer(id),
+        onSuccess: (data) => {
+            notify.success(
+                data?.message || 'Organizador aprovado com sucesso!'
+            );
+            queryClient.invalidateQueries({ queryKey: ['organizersRequest'] });
+            setSolicitacaoSelecionada(null);
+        },
+        onError: () => {
+            notify.error('Erro ao aprovar organizador.');
+        },
+    });
+
+    const rejectMutation = useMutation({
+        mutationFn: (id: number) => rejectRequestForOrganizer(id),
+        onSuccess: (message) => {
+            notify.info(
+                typeof message === 'string' ? message : 'Solicitação rejeitada.'
+            );
+            queryClient.invalidateQueries({ queryKey: ['organizersRequest'] });
+            setSolicitacaoSelecionada(null);
+        },
+        onError: () => {
+            notify.error('Erro ao rejeitar organizador.');
+        },
+    });
+
+    const aoAprovar = (id: number) => {
+        approveMutation.mutate(id);
+    };
 
           <TabsContent value="pendentes">
             <div className={styles.gridContainer}>
@@ -190,65 +247,484 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
                       })}
                     </tbody>
                   </table>
+    const aoRejeitar = (id: number) => {
+        rejectMutation.mutate(id);
+    };
+
+    const toggleStatus = async (id: number, /*organizer: OrganizerData*/) => {
+        try {
+            const response = await promoteSomeoneToUser(id);
+
+            if (typeof response.message === 'string') {
+                notify.success(
+                    response.message || 'Organizador suspenso com sucesso!'
+                );
+            }
+        } catch (err) {
+            const error = err as AxiosError<apiResponseError>;
+            console.log(error.message);
+            notify.error(error.message || 'Erro ao tentar suspender o usuario');
+        }
+    };
+
+    return (
+        <>
+            <div className={styles.container}>
+                <div className={styles.headerSection}>
+                    <Button
+                        variant="ghost"
+                        onClick={onBack}
+                        className={styles.backButton}
+                    >
+                        <ArrowLeft className={styles.backIcon} /> Voltar ao
+                        Dashboard
+                    </Button>
+                    <h1 className={styles.pageTitle}>
+                        Gerenciar Organizadores
+                    </h1>
+                    <p className={styles.pageSubtitle}>
+                        Aprovar solicitações e gerenciar organizadores ativos
+                    </p>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="historico">
-            <div className={styles.gridContainer}>
-              {historico.map((s) => (
-                <Card key={s.id}>
-                  <CardHeader className={styles.historicoHeader}>
-                    <div className={styles.cardHeaderFlex}>
-                      <CardTitle className={styles.historicoTitle}>{s.nomeOrganizacao}</CardTitle>
-                      <Badge variant={s.status === 'aprovado' ? 'default' : 'destructive'}>
-                        {s.status === 'aprovado' ? 'Aprovado' : 'Rejeitado'}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className={styles.historicoGrid}>
-                    <div><span className={styles.historicoLabel}>Email:</span> {s.email}</div>
-                    <div><span className={styles.historicoLabel}>Telefone:</span> {s.telefone}</div>
-                    <div><span className={styles.historicoLabel}>CNPJ:</span> {s.cnpj}</div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+                <Tabs value={abaAtual} onValueChange={setAbaAtual}>
+                    <TabsList className={styles.tabsList}>
+                        <TabsTrigger
+                            value="pendentes"
+                            className={styles.tabTriggerScaled}
+                        >
+                            Solicitações ({pendentes.length})
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="ativos"
+                            className={styles.tabTriggerScaled}
+                        >
+                            Organizadores Ativos ({ativos.length})
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="historico"
+                            className={styles.tabTriggerScaled}
+                        >
+                            Histórico ({historyOrganizers.length})
+                        </TabsTrigger>
+                    </TabsList>
 
-        {solicitacaoSelecionada && (
-          <Dialog open={!!solicitacaoSelecionada} onOpenChange={() => setSolicitacaoSelecionada(null)}>
-            <DialogContent className={styles.dialogContent}>
-              <DialogHeader className={styles.dialogHeader}>
-                <DialogTitle className={styles.dialogTitle}>Detalhes da Solicitação</DialogTitle>
-                <DialogDescription className={styles.dialogDesc}>Informações completas da organização</DialogDescription>
-              </DialogHeader>
+                    <TabsContent value="pendentes">
+                        <div className={styles.gridContainer}>
+                            {pendentes.map((requestedOrganizer) => (
+                                <Card
+                                    key={requestedOrganizer.id}
+                                    className={styles.cardHover}
+                                >
+                                    <CardHeader>
+                                        <div className={styles.cardHeaderFlex}>
+                                            <div>
+                                                <CardTitle
+                                                    className={styles.cardTitle}
+                                                >
+                                                    <Building2
+                                                        className={
+                                                            styles.iconSize5
+                                                        }
+                                                    />{' '}
+                                                    {requestedOrganizer.name}
+                                                </CardTitle>
+                                                <CardDescription
+                                                    className={styles.cardDesc}
+                                                >
+                                                    Solicitado em{' '}
+                                                    {new Date(
+                                                        requestedOrganizer.created_at
+                                                    ).toLocaleDateString(
+                                                        'pt-BR'
+                                                    )}
+                                                </CardDescription>
+                                            </div>
+                                            <Badge
+                                                variant="secondary"
+                                                className={`${styles.cardBadge} ${styles.badgePendente}`}
+                                            >
+                                                Pendente
+                                            </Badge>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent
+                                        className={styles.cardContentSpace}
+                                    >
+                                        <div className={styles.infoList}>
+                                            <div className={styles.infoItem}>
+                                                <Mail
+                                                    className={styles.iconSize4}
+                                                />{' '}
+                                                {requestedOrganizer.email}
+                                            </div>
+                                            <div className={styles.infoItem}>
+                                                <Phone
+                                                    className={styles.iconSize4}
+                                                />{' '}
+                                                {
+                                                    requestedOrganizer.phone_number
+                                                }
+                                            </div>
+                                            <div className={styles.infoItem}>
+                                                <IdCardIcon
+                                                    className={styles.iconTiny}
+                                                />{' '}
+                                                CPF: {requestedOrganizer.cpf}
+                                            </div>
+                                        </div>
+                                        <div className={styles.actionButtons}>
+                                            <Button
+                                                variant="outline"
+                                                className={styles.flex1}
+                                                onClick={() =>
+                                                    setSolicitacaoSelecionada(
+                                                        requestedOrganizer
+                                                    )
+                                                }
+                                            >
+                                                <Eye
+                                                    className={styles.iconSmall}
+                                                />{' '}
+                                                Ver Detalhes
+                                            </Button>
+                                            <Button
+                                                variant="default"
+                                                disabled={
+                                                    approveMutation.isPending
+                                                }
+                                                className={`${styles.flex1} ${styles.btnApprove}`}
+                                                onClick={() =>
+                                                    aoAprovar(
+                                                        requestedOrganizer.id
+                                                    )
+                                                }
+                                            >
+                                                <CheckCircle
+                                                    className={styles.iconSmall}
+                                                />{' '}
+                                                Aprovar
+                                            </Button>
+                                            <Button
+                                                variant="destructive"
+                                                disabled={
+                                                    rejectMutation.isPending
+                                                }
+                                                className={styles.flex1}
+                                                style={{
+                                                    flex: '0.2',
+                                                    padding: '1.5rem',
+                                                }}
+                                                onClick={() =>
+                                                    aoRejeitar(
+                                                        requestedOrganizer.id
+                                                    )
+                                                }
+                                            >
+                                                <XCircle
+                                                    className={styles.iconSmall}
+                                                />
+                                                Reprovar
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </TabsContent>
 
-              <div className={styles.dialogBody}>
-                <div className={styles.dialogGrid}>
-                  <div className={`${styles.colSpan2} ${styles.dialogOrgName}`}>
-                    {solicitacaoSelecionada.nomeOrganizacao}
-                  </div>
+                    <TabsContent value="ativos">
+                        <Card className={styles.tableCard}>
+                            <CardContent className={styles.tableCardContent}>
+                                <div className={styles.tableWrapper}>
+                                    <table className={styles.dataTable}>
+                                        <thead className={styles.tableHead}>
+                                            <tr>
+                                                <th className={styles.thStyle}>
+                                                    Organização
+                                                </th>
+                                                <th className={styles.thStyle}>
+                                                    Contato
+                                                </th>
+                                                <th className={styles.thStyle}>
+                                                    Data de Aprovação
+                                                </th>
+                                                <th className={styles.thStyle}>
+                                                    Eventos
+                                                </th>
+                                                <th className={styles.thStyle}>
+                                                    Receita
+                                                </th>
+                                                <th className={styles.thStyle}>
+                                                    Status
+                                                </th>
+                                                <th
+                                                    className={`${styles.thStyle} ${styles.thRight}`}
+                                                >
+                                                    Ações
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className={styles.tableBody}>
+                                            {ativos.map((org) => {
+                                                const isAtivo = true;
+                                                return (
+                                                    <tr
+                                                        key={org.id}
+                                                        className={`${styles.trBase} ${isAtivo ? styles.trAtivo : styles.trSuspenso}`}
+                                                    >
+                                                        <td
+                                                            className={
+                                                                styles.tdStyle
+                                                            }
+                                                        >
+                                                            <div
+                                                                className={
+                                                                    styles.flexColGap1
+                                                                }
+                                                            >
+                                                                <span
+                                                                    className={
+                                                                        styles.orgName
+                                                                    }
+                                                                >
+                                                                    {org.name}
+                                                                </span>
+                                                                <span
+                                                                    className={
+                                                                        styles.cnpjBadge
+                                                                    }
+                                                                >
+                                                                    <IdCardIcon
+                                                                        className={
+                                                                            styles.iconTiny
+                                                                        }
+                                                                    />{' '}
+                                                                    {org.cpf}
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                        <td
+                                                            className={`${styles.tdStyle} ${styles.contactCell}`}
+                                                        >
+                                                            <div
+                                                                className={
+                                                                    styles.flexColGap1
+                                                                }
+                                                            >
+                                                                <div
+                                                                    className={
+                                                                        styles.infoItem
+                                                                    }
+                                                                >
+                                                                    <Mail
+                                                                        className={
+                                                                            styles.iconGray
+                                                                        }
+                                                                    />{' '}
+                                                                    <span>
+                                                                        {
+                                                                            org.email
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                                <div
+                                                                    className={
+                                                                        styles.infoItem
+                                                                    }
+                                                                >
+                                                                    <Phone
+                                                                        className={
+                                                                            styles.iconGray
+                                                                        }
+                                                                    />{' '}
+                                                                    <span
+                                                                        className={
+                                                                            styles.textSmGray
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            org.phone_number
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td
+                                                            className={
+                                                                styles.tdStyle
+                                                            }
+                                                        >
+                                                            <div
+                                                                className={
+                                                                    styles.flexColGap1
+                                                                }
+                                                            >
+                                                                <div
+                                                                    className={
+                                                                        styles.dateText
+                                                                    }
+                                                                >
+                                                                    {new Date(
+                                                                        org.updated_at
+                                                                    ).toLocaleDateString(
+                                                                        'pt-BR'
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td
+                                                            className={
+                                                                styles.tdStyle
+                                                            }
+                                                        >
+                                                            0
+                                                        </td>
+                                                        <td
+                                                            className={
+                                                                styles.tdStyle
+                                                            }
+                                                        >
+                                                            R$ 0
+                                                        </td>
+                                                        <td
+                                                            className={
+                                                                styles.tdStyle
+                                                            }
+                                                        >
+                                                            <Badge
+                                                                className={`${styles.statusBadge} ${isAtivo ? styles.badgeAtivo : styles.badgeSuspenso}`}
+                                                            >
+                                                                Ativo
+                                                            </Badge>
+                                                        </td>
+                                                        <td
+                                                            className={`${styles.tdStyle} ${styles.tdRight}`}
+                                                        >
+                                                            <Button
+                                                                variant="outline"
+                                                                onClick={() =>
+                                                                    toggleStatus(
+                                                                        org.id,
+                                                                        //org
+                                                                    )
+                                                                }
+                                                                className={`${styles.btnAction} ${isAtivo ? styles.btnSuspend : styles.btnReactivate}`}
+                                                                style={{
+                                                                    padding:
+                                                                        '0.75rem 1.5rem',
+                                                                    fontSize:
+                                                                        '1.125rem',
+                                                                    cursor: 'pointer',
+                                                                }}
+                                                            >
+                                                                Suspender
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                  <Detail label="Email" value={solicitacaoSelecionada.email} />
-                  <Detail label="Telefone" value={solicitacaoSelecionada.telefone} />
-                  <Detail label="CNPJ" value={solicitacaoSelecionada.cnpj} />
-                  <Detail label="Data do Pedido" value={new Date(solicitacaoSelecionada.dataSolicitacao).toLocaleDateString('pt-BR')} />
+                    <TabsContent value="historico">
+                        <div className={styles.gridContainer}>
+                            {historyOrganizers.map((organizer) => (
+                                <Card key={organizer.id}>
+                                    <CardHeader
+                                        className={styles.historicoHeader}
+                                    >
+                                        <div className={styles.cardHeaderFlex}>
+                                            <CardTitle
+                                                className={
+                                                    styles.historicoTitle
+                                                }
+                                            >
+                                                {organizer.name}
+                                            </CardTitle>
+                                            <Badge
+                                                variant={
+                                                    organizer.status ===
+                                                    'approved'
+                                                        ? 'default'
+                                                        : 'destructive'
+                                                }
+                                                className={styles.cardBadge}
+                                            >
+                                                {organizer.status === 'approved'
+                                                    ? 'Aprovado'
+                                                    : 'Rejeitado'}
+                                            </Badge>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent
+                                        className={styles.historicoGrid}
+                                    >
+                                        <div>
+                                            <span
+                                                className={
+                                                    styles.historicoLabel
+                                                }
+                                            >
+                                                Email:
+                                            </span>{' '}
+                                            {organizer.email}
+                                        </div>
+                                        <div>
+                                            <span
+                                                className={
+                                                    styles.historicoLabel
+                                                }
+                                            >
+                                                Telefone:
+                                            </span>{' '}
+                                            {organizer.phone_number}
+                                        </div>
+                                        <div>
+                                            <span
+                                                className={
+                                                    styles.historicoLabel
+                                                }
+                                            >
+                                                CPF:
+                                            </span>{' '}
+                                            {organizer.cpf}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </TabsContent>
+                </Tabs>
 
-                  {solicitacaoSelecionada.site && (
-                    <div className={`${styles.colSpan2} ${styles.linkContainer}`}>
-                      <label className={styles.detailLabel}>Site</label>
-                      <a href={solicitacaoSelecionada.site} className={styles.siteLink} target="_blank" rel="noreferrer">
-                        {solicitacaoSelecionada.site}
-                      </a>
-                    </div>
-                  )}
+                {solicitacaoSelecionada && (
+                    <Dialog
+                        open={!!solicitacaoSelecionada}
+                        onOpenChange={() => setSolicitacaoSelecionada(null)}
+                    >
+                        <DialogContent className={styles.dialogContent}>
+                            <DialogHeader className={styles.dialogHeader}>
+                                <DialogTitle className={styles.dialogTitle}>
+                                    Detalhes da Solicitação
+                                </DialogTitle>
+                                <DialogDescription
+                                    className={styles.dialogDesc}
+                                >
+                                    Informações completas da organização
+                                </DialogDescription>
+                            </DialogHeader>
 
-                  {solicitacaoSelecionada.endereco && (
-                    <Detail label="Endereço" value={solicitacaoSelecionada.endereco} className={styles.colSpan2} />
-                  )}
+                            <div className={styles.dialogBody}>
+                                <div className={styles.dialogGrid}>
+                                    <div
+                                        className={`${styles.colSpan2} ${styles.dialogOrgName}`}
+                                    >
+                                        {solicitacaoSelecionada.name}
+                                    </div>
 
                    <div className={`${styles.colSpan2} ${styles.descContainer}`}>
                     <label className={styles.detailLabel}>Descrição da Organização</label>
@@ -257,23 +733,78 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
                     </div>
                   </div>
                 </div>
+                                    <Detail
+                                        label="Email"
+                                        value={solicitacaoSelecionada.email}
+                                    />
+                                    <Detail
+                                        label="Telefone"
+                                        value={
+                                            solicitacaoSelecionada.phone_number
+                                        }
+                                    />
+                                    <Detail
+                                        label="Data do Pedido"
+                                        value={new Date(
+                                            solicitacaoSelecionada.created_at
+                                        ).toLocaleDateString('pt-BR')}
+                                    />
+                                    <Detail
+                                        label="CPF"
+                                        value={solicitacaoSelecionada.cpf}
+                                    />
 
-                <div className={styles.dialogFooter}>
-                  <Button variant="outline" className={styles.btnLarge} onClick={() => setSolicitacaoSelecionada(null)}>
-                    Fechar
-                  </Button>
-                  <Button variant="destructive" className={styles.btnLargeDest} onClick={() => aoRejeitar(solicitacaoSelecionada.id)}>
-                    Rejeitar
-                  </Button>
-                  <Button className={styles.btnLargeConfirm} onClick={() => aoAprovar(solicitacaoSelecionada.id)}>
-                    Aprovar Agora
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
-      </div>
-    </>
-  );
+                                    <div
+                                        className={`${styles.colSpan2} ${styles.descContainer}`}
+                                    >
+                                        <label className={styles.detailLabel}>
+                                            Motivo
+                                        </label>
+                                        <div className={styles.descBox}>
+                                            <p className={styles.descText}>
+                                                {solicitacaoSelecionada.reason}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className={styles.dialogFooter}>
+                                    <Button
+                                        variant="outline"
+                                        className={styles.btnLarge}
+                                        onClick={() =>
+                                            setSolicitacaoSelecionada(null)
+                                        }
+                                    >
+                                        Fechar
+                                    </Button>
+                                    <Button
+                                        variant="destructive"
+                                        className={styles.btnLargeDest}
+                                        disabled={rejectMutation.isPending}
+                                        onClick={() =>
+                                            aoRejeitar(
+                                                solicitacaoSelecionada.id
+                                            )
+                                        }
+                                    >
+                                        Rejeitar
+                                    </Button>
+                                    <Button
+                                        className={styles.btnLargeConfirm}
+                                        disabled={approveMutation.isPending}
+                                        onClick={() =>
+                                            aoAprovar(solicitacaoSelecionada.id)
+                                        }
+                                    >
+                                        Aprovar Agora
+                                    </Button>
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                )}
+            </div>
+        </>
+    );
 }
