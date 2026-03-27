@@ -8,6 +8,7 @@ import {
     Phone,
     Building2,
     IdCardIcon,
+    Clock,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import {
@@ -208,18 +209,21 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
                             value="pendentes"
                             className={styles.tabTriggerScaled}
                         >
+                            <Clock size={16} style={{ marginRight: '0.8rem' }} />
                             Solicitações ({pendentes.length})
                         </TabsTrigger>
                         <TabsTrigger
                             value="ativos"
                             className={styles.tabTriggerScaled}
                         >
-                            Organizadores Ativos ({numberActiveOrganizers || 0})
+                            <CheckCircle size={16} style={{ marginRight: '0.8rem' }} />
+                            Organizadores Ativos ({ativos?.length})
                         </TabsTrigger>
                         <TabsTrigger
                             value="historico"
                             className={styles.tabTriggerScaled}
                         >
+                            <Building2 size={16} style={{ marginRight: '0.8rem' }} />
                             Histórico ({historyOrganizers.length})
                         </TabsTrigger>
                     </TabsList>
@@ -741,6 +745,8 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
                                         {solicitacaoSelecionada.name}
                                     </div>
 
+
+
                                     <Detail
                                         label="Email"
                                         value={solicitacaoSelecionada.email}
@@ -773,6 +779,7 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
                                                 {solicitacaoSelecionada.reason}
                                             </p>
                                         </div>
+                                    </div>
                                     </div>
                                 </div>
 
@@ -808,7 +815,7 @@ export function ManageOrganizersPage({ onBack }: { onBack: () => void }) {
                                         Aprovar Agora
                                     </Button>
                                 </div>
-                            </div>
+
                         </DialogContent>
                     </Dialog>
                 )}
