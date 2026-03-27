@@ -102,10 +102,7 @@ export function SejaOrganizadorPage() {
                     Voltar
                 </button>
 
-                {/* ... (todo o resto do seu formulário continua exatamente igual) ... */}
-
                 <div className={styles.card}>
-                    {/* Apenas copiando o começo para você se achar, mantenha o resto do HTML igualzinho */}
                     <div className={styles.cardHeader}>
                         <h1 className={styles.cardTitle}>
                             <Building2 size={28} className={styles.titleIcon} />
